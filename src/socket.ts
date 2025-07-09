@@ -10,6 +10,16 @@ const generateRoomId = (): string => {
   return Math.random().toString(36).substring(2, 6).toUpperCase();
 };
 
+// Função para encontrar uma sala pelo ID do jogador
+const findRoomByPlayerId = (playerId: string): { room: GameState, roomId: string} | null => {
+  for (const [roomId, room] of activeRooms.entries()) {
+    if (room.players.some(player => player.id === playerId)) {
+      return { room, roomId };
+    }
+  }
+  return null;
+};
+
 export const setupSocket = (io: Server) => {
   io.on('connection', (socket: Socket) => {
     console.log(`🔌 Novo cliente conectado: ${socket.id}`);
@@ -61,6 +71,29 @@ export const setupSocket = (io: Server) => {
 
     socket.on('disconnect', () => {
       console.log(`🔌 Cliente desconectado: ${socket.id}`);
+
+      const roomInfo = findRoomByPlayerId(socket.id);
+      if (!roomInfo) return;
+
+      const { room, roomId } = roomInfo;
+
+      // Removendo o jogador da sala
+      const playerIndex = room.players.findIndex(player => player.id === socket.id);
+      const disconnectedPlayerName = room.players[playerIndex].name;
+      room.players.splice(playerIndex, 1);
+
+      // Se o jogador desconectado era o host, transferimos a host para outro jogador
+      if (room.players.length === 0) {
+        activeRooms.delete(roomId);
+        console.log(`[SALA REMOVIDA] Sala: ${roomId} foi removida porque não há mais jogadores.`);
+      } else {
+        if (socket.id === room.hostId) {
+          room.hostId = room.players[0].id; // Novo host é o primeiro jogador restante
+          console.log(`[NOVO HOST] ${room.players[0].name} (${room.players[0].id}) agora é o host da sala: ${roomId}`);
+        }
+        // Enviando estado atualizado da sala para todos os jogadores restantes
+        io.to(roomId).emit('update_game_state', room);
+      }
     });
   });
 };
