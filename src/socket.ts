@@ -69,6 +69,24 @@ export const setupSocket = (io: Server) => {
       io.to(roomId).emit('update_game_state', room);
     });
 
+    // Evento para iniciar o jogo
+    // Apenas o host pode iniciar o jogo
+    socket.on('iniciar_jogo', (roomId: string) => {
+      const room = activeRooms.get(roomId);
+      if (!room || socket.id !== room.hostId) {
+        console.log(`[FALHA AO INICIAR] Tentativa de iniciar o jogo na sala ${roomId} por um não-anfitrião.`);
+        return;
+      }
+
+      room.status = 'playing';
+      console.log(`[JOGO INICIADO] O jogo na sala ${roomId} começou.`);
+
+      room.status = 'playing';
+      console.log(`[INÍCIO DO JOGO] Sala: ${roomId}, Host: ${room.hostId}`);
+
+      io.to(roomId).emit('update_game_state', room);
+    });
+
     socket.on('disconnect', () => {
       console.log(`🔌 Cliente desconectado: ${socket.id}`);
 
