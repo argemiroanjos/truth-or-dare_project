@@ -35,6 +35,7 @@ export const setupSocket = (io: Server) => {
         status: 'lobby',
         players: [{ id: socket.id, name: playerName, truthPicks: 0 }],
         usedCardIds: { [socket.id]: [] },
+        currentPlayerIndex: 0
       };
 
       // Adicionando a nova sala ao gerenciador de estado
@@ -81,11 +82,20 @@ export const setupSocket = (io: Server) => {
       room.status = 'playing';
       console.log(`[JOGO INICIADO] O jogo na sala ${roomId} começou.`);
 
-      room.status = 'playing';
-      console.log(`[INÍCIO DO JOGO] Sala: ${roomId}, Host: ${room.hostId}`);
-
       io.to(roomId).emit('update_game_state', room);
     });
+
+    socket.on('proxima_rodada', (roomId: string) => {
+      const room = activeRooms.get(roomId);
+      if (!room || room.status !== 'playing') return;
+
+      // Avançando para a próxima rodada
+      const nextIndex = (room.currentPlayerIndex + 1) % room.players.length;
+      room.currentPlayerIndex = nextIndex;
+
+      console.log(`[PRÓXIMA RODADA] Sala: ${roomId}. É a vez de: ${room.players[nextIndex].name}`);
+      io.to(roomId).emit('update_game_state', room);
+    })
 
     socket.on('disconnect', () => {
       console.log(`🔌 Cliente desconectado: ${socket.id}`);

@@ -10,4 +10,5 @@ export interface GameState {
   status: 'lobby' | 'playing' | 'finished';
   players: Player[];
   usedCardIds: { [playerId: string]: number[]};
+  currentPlayerIndex: number; // Indica o índice do jogador atual
 }
