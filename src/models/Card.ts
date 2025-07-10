@@ -37,7 +37,7 @@ Card.init(
     modelName: 'Card',
     tableName: 'cards',
     timestamps: true, // Habilita createdAt e updatedAt
-  }
+  },
 );
 
 export default Card;

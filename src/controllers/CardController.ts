@@ -15,12 +15,13 @@ const getRandomCard: RequestHandler = async (req: Request, res: Response) => {
     });
 
     if (!card) {
-      res.status(404).json({ message: 'Nenhuma carta encontrada com esses critérios.' });
+      res
+        .status(404)
+        .json({ message: 'Nenhuma carta encontrada com esses critérios.' });
       return;
     }
 
     res.status(200).json(card);
-
   } catch (error) {
     console.error('Erro ao buscar carta aleatória:', error);
     res.status(500).json({ message: 'Erro ao buscar carta aleatória.' });

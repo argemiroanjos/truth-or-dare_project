@@ -1,4 +1,4 @@
-import { Sequelize } from "sequelize";
+import { Sequelize } from 'sequelize';
 import 'dotenv/config';
 
 const dbName = process.env.DB_NAME || 'spicy_db';
@@ -22,6 +22,6 @@ export const testDataBaseConnection = async () => {
   } catch (error) {
     console.error('❌ Não foi possível conectar ao banco de dados:', error);
   }
-}
+};
 
 export default sequelize;

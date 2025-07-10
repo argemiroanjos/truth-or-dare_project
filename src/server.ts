@@ -9,14 +9,14 @@ const app = express();
 // Servidor HTTP é criado a partir do Express.
 const httpServer = createServer(app);
 
-// Instância do Socket.IO 
+// Instância do Socket.IO
 // Configuração do CORS para permitir conexões de qualquer origem (somente para desenvolvimento).
 
 const io = new Server(httpServer, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
+    origin: '*',
+    methods: ['GET', 'POST'],
+  },
 });
 
 setupSocket(io);
