@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import { Player, GameState } from './interfaces/Game';
+import { Player, GameState } from '@verdade-ou-desafio/common';
 
 //GERENCIADOR DE ESTADO
 // Usando um Map para armazenar o estado de cada sala ativa

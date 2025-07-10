@@ -1,0 +1,13 @@
+    {
+      "name": "@verdade-ou-desafio/common",
+      "version": "1.0.0",
+      "main": "dist/index.js",
+      "types": "dist/index.d.ts",
+      "scripts": {
+        "build": "tsc"
+      },
+      "devDependencies": {
+        "typescript": "^5.2.2"
+      }
+    }
+    
