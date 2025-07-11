@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only --ignore-watch node_modules src/server.ts",
     "build": "tsc",
-    "test": "jest"
+    "db:migrate": "npx sequelize-cli db:migrate",
+    "db:seed": "npx sequelize-cli db:seed:all",
+    "test:setup": "npm run db:migrate && npm run db:seed",
+    "test:run": "jest",
+    "test": "npm run test:setup && npm run test:run"
   },
   "keywords": [],
   "author": "",
