@@ -5,8 +5,10 @@ import { GameState } from '@verdade-ou-desafio/common/interfaces/Game';
 // Definimos a interface do contexto do jogo.
 interface IGameContext {
   gameState: GameState | null;
+  socketId: string | null;
   createRoom: (playerName: string) => void;
   joinRoom: (roomId: string, playerName: string) => void;
+  startGame: (roomId: string) => void;
 }
 
 const GameContext = createContext<IGameContext>(null!);
@@ -21,9 +23,14 @@ export const useGame = () => {
 // Ele encapsula a lógica de estado do jogo e fornece funções para criar e entrar em salas
 export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const [socketId, setSocketId] = useState<string | null>(null);
 
   // useEffect para configurar os listeners do socket quando o componente é montado.
   useEffect(() => {
+    socketService.onConnect((id) => {
+      setSocketId(id);
+    });
+
     socketService.onGameStateUpdate((newGameState) => {
       console.log('[GameContext] Estado do jogo atualizado:', newGameState);
       setGameState(newGameState);
@@ -43,10 +50,16 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     socketService.joinRoom(roomId, playerName);
   };
 
+    const startGame = (roomId: string) => {
+    socketService.startGame(roomId);
+  };
+
   const value = {
     gameState,
+    socketId,
     createRoom,
     joinRoom,
+    startGame,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

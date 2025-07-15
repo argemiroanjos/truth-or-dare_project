@@ -4,7 +4,7 @@ import kekasMascot from '../assets/mascote.png';
 
 const Lobby: React.FC = () => {
   // Usando hook personalizado useGame para acessar o estado do jogo.
-  const { gameState } = useGame();
+  const { gameState, startGame, socketId } = useGame();
 
   // Se o estado do jogo não estiver disponível, mostra uma mensagem de carregamento.
   if (!gameState) {
@@ -16,6 +16,15 @@ const Lobby: React.FC = () => {
   }
 
   const { id: roomId, players, hostId } = gameState;
+
+    const isHost = socketId === hostId;
+  const canStart = isHost && players.length >= 2;
+
+  const handleStartGame = () => {
+    if (canStart) {
+      startGame(roomId);
+    }
+  };
 
   return (
     <main className="flex flex-col items-center justify-start min-h-screen bg-gradient-to-b from-indigo-950 to-black p-4 text-white pt-16 md:pt-24">
@@ -52,14 +61,20 @@ const Lobby: React.FC = () => {
         </div>
       </div>
 
+      {/* Botão de Iniciar Jogo com lógica */}
       <div className="mt-8">
-        <button 
-          className="bg-pink-600 text-white font-bold text-xl py-4 px-12 rounded-lg shadow-lg hover:bg-pink-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
-        >
-          INICIAR JOGO
-        </button>
+        {isHost ? (
+          <button 
+            onClick={handleStartGame}
+            disabled={!canStart}
+            className="bg-pink-600 text-white font-bold text-xl py-4 px-12 rounded-lg shadow-lg hover:bg-pink-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-all duration-300"
+          >
+            {players.length < 2 ? `Aguardando mais ${2 - players.length} jogadores` : 'INICIAR JOGO'}
+          </button>
+        ) : (
+          <p className="text-lg text-gray-400">Aguardando o anfitrião iniciar o jogo...</p>
+        )}
       </div>
-
     </main>
   );
 };
