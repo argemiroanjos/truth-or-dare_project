@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import { GameState } from '@verdade-ou-desafio/common';
+import { GameState } from '@verdade-ou-desafio/common/interfaces/Game';
 
 const SOCKET_URL = 'http://localhost:3333';
 
