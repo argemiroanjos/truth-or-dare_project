@@ -1,14 +1,38 @@
+export interface Card {
+  id: number;
+  type: 'truth' | 'dare';
+  content: string;
+  level: number;
+}
+
 export interface Player {
   id: string;
   name: string;
-  truthPicks: number;
+  consecutiveTruths: number; 
+  suspensionCount: number; 
+}
+
+export interface Votes {
+  [playerId: string]: 'like' | 'dislike';
 }
 
 export interface GameState {
   id: string;
   hostId: string;
-  status: 'lobby' | 'playing' | 'finished';
+  
+  phase: 'LOBBY' | 'SPINNING' | 'CHOOSING' | 'ACTION' | 'VOTING' | 'VERDICT' | 'SUSPENDED';
+  
   players: Player[];
+  
+  questionerPool: string[]; 
+
+  spinnerId: string | null;
+  questionerId: string | null;
+  responderId: string | null;
+
+  currentCard: Card | null;
+  
+  votes: Votes;
+
   usedCardIds: { [playerId: string]: number[] };
-  currentPlayerIndex: number; // Indica o índice do jogador atual
 }

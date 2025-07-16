@@ -1,30 +1,24 @@
 import { Server, Socket } from 'socket.io';
-import {
-  Player,
-  GameState,
-} from '@verdade-ou-desafio/common/src/interfaces/Game';
+import { Player, GameState } from '@verdade-ou-desafio/common/interfaces/Game';
 
-//GERENCIADOR DE ESTADO
-// Usando um Map para armazenar o estado de cada sala ativa
-// A chave da sala é o ID da sala, e o valor é o estado do jogo
 const activeRooms = new Map<string, GameState>();
 
 const generateRoomId = (): string => {
   return Math.random().toString(36).substring(2, 6).toUpperCase();
 };
 
-// Função para encontrar uma sala pelo ID do jogador
 const findRoomByPlayerId = (
   playerId: string,
 ): { room: GameState; roomId: string } | null => {
   for (const [roomId, room] of activeRooms.entries()) {
-    if (room.players.some((player) => player.id === playerId)) {
+    if (room.players.some((p) => p.id === playerId)) {
       return { room, roomId };
     }
   }
   return null;
 };
 
+// Configuração do Socket.IO
 export const setupSocket = (io: Server) => {
   io.on('connection', (socket: Socket) => {
     console.log(`🔌 Novo cliente conectado: ${socket.id}`);
@@ -33,24 +27,33 @@ export const setupSocket = (io: Server) => {
       const roomId = generateRoomId();
       socket.join(roomId);
 
-      // Estado inicial da sala
+      // Criamos o jogador anfitrião com os dados iniciais
+      const hostPlayer: Player = {
+        id: socket.id,
+        name: playerName,
+        consecutiveTruths: 0,
+        suspensionCount: 0,
+      };
+
+      // GameState inicial
       const newGameState: GameState = {
         id: roomId,
         hostId: socket.id,
-        status: 'lobby',
-        players: [{ id: socket.id, name: playerName, truthPicks: 0 }],
+        phase: 'LOBBY', // O jogo começa na fase de Lobby
+        players: [hostPlayer],
+        questionerPool: [],
+        spinnerId: null,
+        questionerId: null,
+        responderId: null,
+        currentCard: null,
+        votes: {},
         usedCardIds: { [socket.id]: [] },
-        currentPlayerIndex: 0,
       };
 
-      // Adicionando a nova sala ao gerenciador de estado
       activeRooms.set(roomId, newGameState);
-
       console.log(
-        `[SALA CRIADA] Sala: ${roomId}, Host: ${playerName} (${socket.id})`,
+        `[SALA CRIADA] Sala: ${roomId}, Anfitrião: ${playerName} (${socket.id})`,
       );
-
-      // Enviando estado inicial da sala para o host
       io.to(roomId).emit('update_game_state', newGameState);
     });
 
@@ -60,62 +63,39 @@ export const setupSocket = (io: Server) => {
         const { roomId, playerName } = data;
         const room = activeRooms.get(roomId);
 
-        // Verificamos se a sala existe e se ainda está no lobby
-        if (!room || room.status !== 'lobby') {
-          socket.emit(
-            'erro_de_sala',
-            'Não foi possível entrar na sala. Ela pode não existir ou o jogo já começou.',
-          );
+        if (!room || room.phase !== 'LOBBY') {
+          socket.emit('erro_sala', 'Não foi possível entrar na sala.');
           return;
         }
 
         socket.join(roomId);
 
-        // Adicionando o novo jogador à sala
         const newPlayer: Player = {
           id: socket.id,
           name: playerName,
-          truthPicks: 0,
+          consecutiveTruths: 0,
+          suspensionCount: 0,
         };
+
         room.players.push(newPlayer);
         room.usedCardIds[socket.id] = [];
 
-        console.log(
-          `[ENTRADA] ${playerName} (${socket.id}) entrou na sala: ${roomId}`,
-        );
-
-        // Enviando estado atualizado da sala para todos os jogadores
         io.to(roomId).emit('update_game_state', room);
       },
     );
 
-    // Evento para iniciar o jogo
-    // Apenas o host pode iniciar o jogo
     socket.on('iniciar_jogo', (roomId: string) => {
       const room = activeRooms.get(roomId);
-      if (!room || socket.id !== room.hostId) {
-        console.log(
-          `[FALHA AO INICIAR] Tentativa de iniciar o jogo na sala ${roomId} por um não-anfitrião.`,
-        );
-        return;
-      }
+      if (!room || socket.id !== room.hostId) return;
 
-      room.status = 'playing';
-      console.log(`[JOGO INICIADO] O jogo na sala ${roomId} começou.`);
-
-      io.to(roomId).emit('update_game_state', room);
-    });
-
-    socket.on('proxima_rodada', (roomId: string) => {
-      const room = activeRooms.get(roomId);
-      if (!room || room.status !== 'playing') return;
-
-      // Avançando para a próxima rodada
-      const nextIndex = (room.currentPlayerIndex + 1) % room.players.length;
-      room.currentPlayerIndex = nextIndex;
+      room.phase = 'SPINNING';
+      // O anfitrião é o primeiro a girar.
+      room.spinnerId = room.hostId;
+      // Lista de questionadores é preenchida com todos os jogadores.
+      room.questionerPool = room.players.map((p) => p.id);
 
       console.log(
-        `[PRÓXIMA RODADA] Sala: ${roomId}. É a vez de: ${room.players[nextIndex].name}`,
+        `[JOGO INICIADO] Sala: ${roomId}. Anfitrião ${room.players.find((p) => p.id === room.hostId)?.name} começa a girar.`,
       );
       io.to(roomId).emit('update_game_state', room);
     });
@@ -127,29 +107,26 @@ export const setupSocket = (io: Server) => {
       if (!roomInfo) return;
 
       const { room, roomId } = roomInfo;
+      const playerIndex = room.players.findIndex((p) => p.id === socket.id);
 
-      // Removendo o jogador da sala
-      const playerIndex = room.players.findIndex(
-        (player) => player.id === socket.id,
-      );
-      const disconnectedPlayerName = room.players[playerIndex].name;
-      console.log(`[SAÍDA] ${disconnectedPlayerName} saiu da sala ${roomId}`);
-      room.players.splice(playerIndex, 1);
+      if (playerIndex > -1) {
+        const disconnectedPlayerName = room.players[playerIndex].name;
+        console.log(`[SAÍDA] ${disconnectedPlayerName} saiu da sala ${roomId}`);
+        room.players.splice(playerIndex, 1);
+      }
 
-      // Se o jogador desconectado era o host, transferimos a host para outro jogador
       if (room.players.length === 0) {
         activeRooms.delete(roomId);
         console.log(
-          `[SALA REMOVIDA] Sala: ${roomId} foi removida porque não há mais jogadores.`,
+          `[SALA FECHADA] A sala ${roomId} ficou vazia e foi fechada.`,
         );
       } else {
         if (socket.id === room.hostId) {
-          room.hostId = room.players[0].id; // Novo host é o primeiro jogador restante
+          room.hostId = room.players[0].id;
           console.log(
-            `[NOVO HOST] ${room.players[0].name} (${room.players[0].id}) agora é o host da sala: ${roomId}`,
+            `[NOVO ANFITRIÃO] O anfitrião saiu. O novo anfitrião da sala ${roomId} é ${room.players[0].name}.`,
           );
         }
-        // Enviando estado atualizado da sala para todos os jogadores restantes
         io.to(roomId).emit('update_game_state', room);
       }
     });
