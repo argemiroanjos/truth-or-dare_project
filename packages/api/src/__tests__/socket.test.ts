@@ -9,6 +9,7 @@ describe('Testes de Eventos do Socket.IO para Salas de Jogo', () => {
   let clientSocket: ClientSocket;
   const port = 3001;
 
+  // Antes de todos os testes, iniciamos o nosso servidor.
   beforeAll((done) => {
     httpServer.listen(port, () => {
       console.log(`Servidor de teste a rodar na porta ${port}`);
@@ -16,11 +17,15 @@ describe('Testes de Eventos do Socket.IO para Salas de Jogo', () => {
     });
   });
 
-  afterAll(() => {
+  // Depois de todos os testes, fechamos o servidor e a conexão com o banco de dados.
+  // Isso é importante para evitar vazamentos de memória e conexões abertas.
+  afterAll(async () => {
     httpServer.close();
-    sequelize.close();
+    await sequelize.close();
   });
 
+  // Antes de cada teste, criamos uma nova instância do cliente Socket.IO.
+  // Isso garante que cada teste comece com um cliente limpo e desconectado.
   beforeEach((done) => {
     clientSocket = Client(`http://localhost:${port}`);
     clientSocket.on('connect', () => {
@@ -28,35 +33,67 @@ describe('Testes de Eventos do Socket.IO para Salas de Jogo', () => {
     });
   });
 
+  // Após cada teste, desconectamos o cliente Socket.IO.
+  // Isso é importante para garantir que não haja conexões persistentes entre os testes,
+  // o que poderia causar falhas intermitentes ou comportamentos inesperados.
   afterEach(() => {
-    if (clientSocket.connected) {
+    if (clientSocket && clientSocket.connected) {
       clientSocket.disconnect();
     }
   });
 
-  describe("Teste de Evento: 'criar_sala'", () => {
-    it('deve criar uma sala e devolver o estado inicial do jogo', async () => {
-      const playerName = 'Anfitrião Teste';
+  // Teste para o fluxo de criação de sala e início do jogo
+  // Este teste verifica se o fluxo de criação de sala e início do jogo funciona corretamente.
+  describe("Fluxo: 'criar_sala' seguido de 'iniciar_jogo'", () => {
+    it('deve criar uma sala com o estado de LOBBY e depois iniciar o jogo com o estado de SPINNING', async () => {
+      const hostName = 'Anfitrião Teste';
 
-      // 1. Criando uma Promise que só será resolvida quando o evento 'update_game_state' chegar.
-      const responsePromise = new Promise<GameState>((resolve) => {
+      // Parte 1 - Criação da sala
+
+      // Criamos uma nova Promise para esperar pela atualização do estado do jogo.
+      const createRoomPromise = new Promise<GameState>((resolve) => {
         clientSocket.on('update_game_state', (gameState) => {
           resolve(gameState);
         });
       });
 
-      // 2. Emitindo o nosso evento 'criar_sala'.
-      clientSocket.emit('criar_sala', playerName);
+      // Emitindo o evento para criar a sala.
+      clientSocket.emit('criar_sala', hostName);
 
-      // Esperando a resposta do servidor.
-      const gameState = await responsePromise;
+      // Aguardando a resposta do servidor.
+      const initialGameState = await createRoomPromise;
 
-      expect(gameState).toBeDefined();
-      expect(gameState.id).toHaveLength(4);
-      expect(gameState.status).toBe('lobby');
-      expect(gameState.players).toHaveLength(1);
-      expect(gameState.players[0].name).toBe(playerName);
-      expect(gameState.hostId).toBe(clientSocket.id);
-    });
+      // Verificando se o estado inicial (LOBBY) está correto.
+      expect(initialGameState.phase).toBe('LOBBY');
+      expect(initialGameState.hostId).toBe(clientSocket.id);
+      expect(initialGameState.players).toHaveLength(1);
+      expect(initialGameState.players[0].name).toBe(hostName);
+
+      const roomId = initialGameState.id;
+
+      // Parte 2: Início do Jogo
+
+      // Criamos uma nova Promise para esperar pela atualização do estado do jogo
+      // quando o jogo for iniciado.
+      const startGamePromise = new Promise<GameState>((resolve) => {
+        clientSocket.on('update_game_state', (gameState) => {
+          // Verificando se o estado do jogo foi atualizado para SPINNING.
+          if (gameState.phase === 'SPINNING') {
+            resolve(gameState);
+          }
+        });
+      });
+
+      // Emitindo o evento para iniciar o jogo.
+      clientSocket.emit('iniciar_jogo', roomId);
+
+      // Aguardando a resposta do servidor.
+      const playingGameState = await startGamePromise;
+
+      // Verificando se o estado do jogo foi atualizado corretamente.
+      expect(playingGameState.phase).toBe('SPINNING');
+      expect(playingGameState.spinnerId).toBe(clientSocket.id);
+      expect(playingGameState.questionerPool).toContain(clientSocket.id);
+    }, 10000);
   });
 });
