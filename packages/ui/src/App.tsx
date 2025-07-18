@@ -6,13 +6,14 @@ import Lobby from './pages/Lobby';
 function App() {
   const { gameState } = useGame();
 
-    if (gameState && gameState.status === 'playing') {
+  if (gameState && gameState.phase !== 'LOBBY') {
     return <Game />;
   }
 
-  if (gameState && gameState.status === 'lobby') {
+  if (gameState && gameState.phase === 'LOBBY') {
     return <Lobby />;
   }
+
   return <Home />;
 }
 

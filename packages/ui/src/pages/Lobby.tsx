@@ -62,7 +62,7 @@ const Lobby: React.FC = () => {
       </div>
 
       {/* Botão de Iniciar Jogo com lógica */}
-      <div className="mt-8">
+      <div className="mt-8 h-16">
         {isHost ? (
           <button 
             onClick={handleStartGame}

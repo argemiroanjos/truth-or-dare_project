@@ -29,6 +29,7 @@ class SocketService {
     });
   }
 
+  // Métodos de eventos do jogo
   public createRoom(playerName: string) {
     this.socket.emit('criar_sala', playerName);
   }
@@ -39,6 +40,30 @@ class SocketService {
 
   public startGame(roomId: string) {
     this.socket.emit('iniciar_jogo', roomId);
+  }
+
+  public spinBottle(roomId: string) {
+    this.socket.emit('spin_bottle', roomId);
+  }
+
+  public makeChoice(roomId: string, choice: 'truth' | 'dare') {
+    this.socket.emit('make_choice', { roomId, choice });
+  }
+
+  public completeAction(roomId: string) {
+    this.socket.emit('action_complete', roomId);
+  }
+
+  public submitVote(roomId: string, vote: 'like' | 'dislike') {
+    this.socket.emit('submit_vote', { roomId, vote });
+  }
+
+  public confirmVerdict(roomId: string, verdict: 'accepted' | 'rejected') {
+    this.socket.emit('confirm_verdict', { roomId, verdict });
+  }
+
+  public nextRound(roomId: string) {
+    this.socket.emit('next_round', roomId);
   }
 
   public onGameStateUpdate(callback: (gameState: GameState) => void) {
