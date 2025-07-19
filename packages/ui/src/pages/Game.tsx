@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { Card } from '@verdade-ou-desafio/common/interfaces/Game';
 
 const playerAvatars = ['🐵', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐷'];
 
@@ -15,8 +16,37 @@ const LAYOUTS: { [key: number]: { x: number; y: number }[] } = {
   8: [{ x: 0, y: -160 }, { x: 113, y: -113 }, { x: 160, y: 0 }, { x: 113, y: 113 }, { x: 0, y: 160 }, { x: -113, y: 113 }, { x: -160, y: 0 }, { x: -113, y: -113 }],
 };
 
+const CardModal: React.FC<{
+  card: Card;
+  isResponder: boolean;
+  onComplete: () => void;
+}> = ({ card, isResponder, onComplete }) => {
+  return (
+    // O fundo semi-transparente que cobre o ecrã
+    <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center z-30 animate-fade-in">
+      {/* O cartão em si */}
+      <div className="bg-indigo-900 border-2 border-pink-500 rounded-2xl p-8 max-w-lg text-center shadow-2xl shadow-pink-500/30">
+        <h2 className={`font-display text-4xl font-bold mb-6 ${card.type === 'truth' ? 'text-cyan-400' : 'text-pink-400'}`}>
+          {card.type === 'truth' ? 'VERDADE' : 'DESAFIO'}
+        </h2>
+        <p className="text-2xl text-white mb-8">{card.content}</p>
+        
+        {/* O botão só aparece para o "Responder" */}
+        {isResponder && (
+          <button 
+            onClick={onComplete}
+            className="bg-green-500 text-white font-bold text-xl py-3 px-10 rounded-lg shadow-lg hover:bg-green-600"
+          >
+            Ação Concluída
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const GamePage: React.FC = () => {
-  const { gameState, socketId, spinBottle, makeChoice } = useGame();
+  const { gameState, socketId, spinBottle, makeChoice, completeAction } = useGame();
   const [bottleRotation, setBottleRotation] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
 
@@ -52,14 +82,15 @@ const GamePage: React.FC = () => {
 
   if (!gameState) return null;
 
-  const { players, phase, spinnerId, questionerId, responderId, id: roomId } = gameState;
-  
+  const { players, phase, spinnerId, questionerId, responderId, currentCard, id: roomId } = gameState;
+
   const spinner = players.find(p => p.id === spinnerId);
   const questioner = players.find(p => p.id === questionerId);
   const responder = players.find(p => p.id === responderId);
   
   const isMyTurnToSpin = socketId === spinnerId;
   const isMyTurnToChoose = socketId === questionerId;
+  const isMyTurnToRespond = socketId === responderId;
 
   const handleSpinBottle = () => {
     if (isMyTurnToSpin && phase === 'SPINNING') {
@@ -76,6 +107,12 @@ const GamePage: React.FC = () => {
   const handleSelectDare = () => {
     if (isMyTurnToChoose) {
       makeChoice(roomId, 'dare');
+    }
+  };
+
+  const handleCompleteAction = () => { 
+    if (isMyTurnToRespond) {
+      completeAction(roomId);
     }
   };
 
@@ -161,6 +198,15 @@ const GamePage: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* RENDERIZAÇÃO CONDICIONAL PARA O MODAL */}
+      {phase === 'ACTION' && currentCard && (
+        <CardModal 
+          card={currentCard}
+          isResponder={isMyTurnToRespond}
+          onComplete={handleCompleteAction}
+        />
+      )}
     </main>
   );
 };

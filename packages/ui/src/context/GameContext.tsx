@@ -12,6 +12,7 @@ interface IGameContext {
   spinBottle: (roomId: string) => void;
   makeChoice: (roomId: string, choice: 'truth' | 'dare') => void;
   nextRound: (roomId: string) => void;
+  completeAction: (roomId: string) => void;
 }
 
 const GameContext = createContext<IGameContext>(null!);
@@ -78,6 +79,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     spinBottle,
     makeChoice,
     nextRound,
+    completeAction: (roomId: string) => {
+      socketService.completeAction(roomId);
+    },
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

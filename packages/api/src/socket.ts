@@ -211,6 +211,20 @@ export const setupSocket = (io: Server) => {
       },
     );
 
+    socket.on('action_complete', (roomId: string) => {
+      const room = activeRooms.get(roomId);
+      if (!room || socket.id !== room.responderId || room.phase !== 'ACTION') {
+        return;
+      }
+
+      // Atualizamos o estado do jogo para a fase de votação
+      room.phase = 'VOTING';
+      console.log(`[AÇÃO COMPLETA] Sala: ${roomId}. A iniciar a votação.`);
+
+      // Emitimos o estado atualizado do jogo para todos os jogadores na sala
+      io.to(roomId).emit('update_game_state', room);
+    });
+
     socket.on('disconnect', () => {
       console.log(`🔌 Cliente desconectado: ${socket.id}`);
 
