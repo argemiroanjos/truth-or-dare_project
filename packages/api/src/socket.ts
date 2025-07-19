@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import { Player, GameState } from '@verdade-ou-desafio/common/interfaces/Game';
 
 const activeRooms = new Map<string, GameState>();
+const MAX_PLAYERS_PER_ROOM = 8; // Definindo um limite máximo de jogadores por sala
 
 const generateRoomId = (): string => {
   return Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -68,6 +69,14 @@ export const setupSocket = (io: Server) => {
           return;
         }
 
+        if (room.players.length >= MAX_PLAYERS_PER_ROOM) {
+          socket.emit(
+            'erro_sala',
+            `A sala está cheia. O limite é de ${MAX_PLAYERS_PER_ROOM} jogadores.`,
+          );
+          return;
+        }
+
         socket.join(roomId);
 
         const newPlayer: Player = {
@@ -97,6 +106,43 @@ export const setupSocket = (io: Server) => {
       console.log(
         `[JOGO INICIADO] Sala: ${roomId}. Anfitrião ${room.players.find((p) => p.id === room.hostId)?.name} começa a girar.`,
       );
+      io.to(roomId).emit('update_game_state', room);
+    });
+
+    socket.on('spin_bottle', (roomId: string) => {
+      const room = activeRooms.get(roomId);
+      if (!room || socket.id !== room.spinnerId || room.phase !== 'SPINNING') {
+        return;
+      }
+
+      // Criamos uma lista de jogadores elegíveis (todos, exceto quem girou).
+      const eligiblePlayers = room.players.filter((p) => p.id !== socket.id);
+      if (eligiblePlayers.length < 2) {
+        return;
+      }
+      // Escolhemos aleatoriamente um questioner e um responder.
+      const questionerIndex = Math.floor(
+        Math.random() * eligiblePlayers.length,
+      );
+      room.questionerId = eligiblePlayers[questionerIndex].id;
+
+      // Removemos o questioner escolhido da lista de elegíveis para o responder.
+      const remainingPlayers = eligiblePlayers.filter(
+        (p) => p.id !== room.questionerId,
+      );
+      const responderIndex = Math.floor(
+        Math.random() * remainingPlayers.length,
+      );
+      room.responderId = remainingPlayers[responderIndex].id;
+
+      // Atualizamos o estado do jogo.
+      room.phase = 'CHOOSING';
+
+      console.log(
+        `[GARRAFA GIRADA] Sala: ${roomId}. Questioner: ${room.questionerId}, Responder: ${room.responderId}`,
+      );
+
+      // Emitimos o estado atualizado do jogo para todos os jogadores na sala.
       io.to(roomId).emit('update_game_state', room);
     });
 
