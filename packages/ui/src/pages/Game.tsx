@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
-import { Card } from '@verdade-ou-desafio/common/interfaces/Game';
+import { Card, Votes } from '@verdade-ou-desafio/common/interfaces/Game';
 
 const playerAvatars = ['🐵', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐷'];
 
@@ -45,8 +45,82 @@ const CardModal: React.FC<{
   );
 };
 
+const VotingModal: React.FC<{
+  card: Card;
+  votes: Votes;
+  isResponder: boolean;
+  hasVoted: boolean;
+  onSubmitVote: (vote: 'like' | 'dislike') => void;
+}> = ({ card, votes, isResponder, hasVoted, onSubmitVote }) => {
+  const totalLikes = Object.values(votes).filter(v => v === 'like').length;
+  const totalDislikes = Object.values(votes).filter(v => v === 'dislike').length;
+
+  return (
+    <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center z-30 animate-fade-in">
+      <div className="bg-indigo-900 border-2 border-yellow-400 rounded-2xl p-8 max-w-lg text-center shadow-2xl shadow-yellow-400/30">
+        <h2 className="font-display text-3xl font-bold mb-4 text-yellow-400">VOTAÇÃO</h2>
+        <p className="text-xl text-gray-300 mb-6">A ação foi cumprida?</p>
+        <p className="text-2xl text-white mb-8 bg-black/20 p-4 rounded-lg">"{card.content}"</p>
+        
+        {/* Lógica para mostrar os botões de voto ou a mensagem de espera */}
+        {isResponder ? (
+          <p className="text-lg text-gray-400">A aguardar os votos dos outros jogadores...</p>
+        ) : hasVoted ? (
+          <p className="text-lg text-green-400">O seu voto foi registado! A aguardar os outros...</p>
+        ) : (
+          <div className="flex gap-4 justify-center">
+            <button onClick={() => onSubmitVote('like')} className="bg-green-500 text-white text-4xl w-24 h-24 rounded-full shadow-lg hover:bg-green-600">👍</button>
+            <button onClick={() => onSubmitVote('dislike')} className="bg-red-500 text-white text-4xl w-24 h-24 rounded-full shadow-lg hover:bg-red-600">👎</button>
+          </div>
+        )}
+
+        {/* Exibição dos resultados parciais */}
+        <div className="mt-6 flex justify-center gap-6 text-2xl">
+          <span className="text-green-400">👍 {totalLikes}</span>
+          <span className="text-red-400">👎 {totalDislikes}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const VerdictModal: React.FC<{
+  votes: Votes;
+  isQuestioner: boolean;
+  onConfirmVerdict: (verdict: 'accepted' | 'rejected') => void;
+}> = ({ votes, isQuestioner, onConfirmVerdict }) => {
+  const totalLikes = Object.values(votes).filter(v => v === 'like').length;
+  const totalDislikes = Object.values(votes).filter(v => v === 'dislike').length;
+
+  return (
+    <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center z-30 animate-fade-in">
+      <div className="bg-indigo-900 border-2 border-green-400 rounded-2xl p-8 max-w-lg text-center shadow-2xl shadow-green-400/30">
+        <h2 className="font-display text-3xl font-bold mb-4 text-green-400">VEREDITO</h2>
+        <p className="text-xl text-gray-300 mb-6">A votação terminou!</p>
+        
+        <div className="mb-8 flex justify-center gap-6 text-4xl">
+          <span className="text-green-400">👍 {totalLikes}</span>
+          <span className="text-red-400">👎 {totalDislikes}</span>
+        </div>
+        
+        {isQuestioner ? (
+          <>
+            <p className="text-lg text-gray-400 mb-4">Qual é a sua decisão final?</p>
+            <div className="flex gap-4 justify-center">
+              <button onClick={() => onConfirmVerdict('accepted')} className="bg-green-500 text-white font-bold text-xl py-3 px-10 rounded-lg shadow-lg hover:bg-green-600">ACEITAR</button>
+              <button onClick={() => onConfirmVerdict('rejected')} className="bg-red-500 text-white font-bold text-xl py-3 px-10 rounded-lg shadow-lg hover:bg-red-600">REJEITAR</button>
+            </div>
+          </>
+        ) : (
+          <p className="text-lg text-gray-400 animate-pulse">A aguardar o veredito do Questioner...</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const GamePage: React.FC = () => {
-  const { gameState, socketId, spinBottle, makeChoice, completeAction } = useGame();
+  const { gameState, socketId, spinBottle, makeChoice, completeAction, submitVote, confirmVerdict } = useGame();
   const [bottleRotation, setBottleRotation] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
 
@@ -82,7 +156,7 @@ const GamePage: React.FC = () => {
 
   if (!gameState) return null;
 
-  const { players, phase, spinnerId, questionerId, responderId, currentCard, id: roomId } = gameState;
+  const { players, phase, spinnerId, questionerId, responderId, currentCard, votes, id: roomId } = gameState;
 
   const spinner = players.find(p => p.id === spinnerId);
   const questioner = players.find(p => p.id === questionerId);
@@ -91,6 +165,7 @@ const GamePage: React.FC = () => {
   const isMyTurnToSpin = socketId === spinnerId;
   const isMyTurnToChoose = socketId === questionerId;
   const isMyTurnToRespond = socketId === responderId;
+    const hasVoted = socketId ? votes[socketId] !== undefined : false;
 
   const handleSpinBottle = () => {
     if (isMyTurnToSpin && phase === 'SPINNING') {
@@ -113,6 +188,18 @@ const GamePage: React.FC = () => {
   const handleCompleteAction = () => { 
     if (isMyTurnToRespond) {
       completeAction(roomId);
+    }
+  };
+
+    const handleSubmitVote = (vote: 'like' | 'dislike') => {
+    if (!isMyTurnToRespond && !hasVoted) {
+      submitVote(roomId, vote);
+    }
+  };
+
+  const handleConfirmVerdict = (verdict: 'accepted' | 'rejected') => {
+    if (isMyTurnToChoose) {
+      confirmVerdict(roomId, verdict);
     }
   };
 
@@ -205,6 +292,24 @@ const GamePage: React.FC = () => {
           card={currentCard}
           isResponder={isMyTurnToRespond}
           onComplete={handleCompleteAction}
+        />
+      )}
+      {/* RENDERIZAÇÃO CONDICIONAL PARA O MODAL DE VOTAÇÃO */}
+      {phase === 'VOTING' && currentCard && (
+        <VotingModal 
+          card={currentCard}
+          votes={votes}
+          isResponder={isMyTurnToRespond}
+          hasVoted={hasVoted}
+          onSubmitVote={handleSubmitVote}
+        />
+      )}
+      {/* RENDERIZAÇÃO CONDICIONAL PARA O MODAL DE VEREDITO */}
+      {phase === 'VERDICT' && (
+        <VerdictModal 
+          votes={votes}
+          isQuestioner={isMyTurnToChoose}
+          onConfirmVerdict={handleConfirmVerdict}
         />
       )}
     </main>

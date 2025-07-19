@@ -13,6 +13,8 @@ interface IGameContext {
   makeChoice: (roomId: string, choice: 'truth' | 'dare') => void;
   nextRound: (roomId: string) => void;
   completeAction: (roomId: string) => void;
+  submitVote: (roomId: string, vote: 'like' | 'dislike') => void;
+  confirmVerdict: (roomId: string, verdict: 'accepted' | 'rejected') => void;
 }
 
 const GameContext = createContext<IGameContext>(null!);
@@ -70,6 +72,18 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     socketService.nextRound(roomId);
   };
 
+  const completeAction = (roomId: string) => {
+    socketService.completeAction(roomId);
+  };
+
+  const submitVote = (roomId: string, vote: 'like' | 'dislike') => {
+    socketService.submitVote(roomId, vote);
+  };
+
+  const confirmVerdict = (roomId: string, verdict: 'accepted' | 'rejected') => {
+    socketService.confirmVerdict(roomId, verdict);
+  };
+
   const value = {
     gameState,
     socketId,
@@ -79,9 +93,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     spinBottle,
     makeChoice,
     nextRound,
-    completeAction: (roomId: string) => {
-      socketService.completeAction(roomId);
-    },
+    completeAction,
+    submitVote,
+    confirmVerdict,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

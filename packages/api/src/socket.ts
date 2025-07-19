@@ -225,6 +225,100 @@ export const setupSocket = (io: Server) => {
       io.to(roomId).emit('update_game_state', room);
     });
 
+    socket.on(
+      'submit_vote',
+      (data: { roomId: string; vote: 'like' | 'dislike' }) => {
+        const { roomId, vote } = data;
+        const room = activeRooms.get(roomId);
+
+        // Verificamos se a sala existe, se a fase é 'VOTING' e se o jogador não é o "Responder".
+        if (
+          !room ||
+          room.phase !== 'VOTING' ||
+          socket.id === room.responderId
+        ) {
+          return;
+        }
+
+        // Adicionamos o voto do jogador.
+        room.votes[socket.id] = vote;
+        console.log(
+          `[VOTO] Sala: ${roomId}. Jogador ${socket.id} votou: ${vote}`,
+        );
+
+        // 1. Atualizamos o estado do jogo com o voto do jogador.
+        // O número de votantes deve ser o total de jogadores menos o "Responder".
+        const requiredVotes = room.players.length - 1;
+        if (Object.keys(room.votes).length === requiredVotes) {
+          console.log(
+            `[VOTAÇÃO COMPLETA] Sala: ${roomId}. A passar para a fase de veredito.`,
+          );
+          // Se todos votaram, mudamos para a fase de Veredito.
+          room.phase = 'VERDICT';
+        }
+
+        // 2. Emitimos o estado atualizado do jogo para todos os jogadores na sala.
+        io.to(roomId).emit('update_game_state', room);
+      },
+    );
+
+    socket.on(
+      'confirm_verdict',
+      (data: { roomId: string; verdict: 'accepted' | 'rejected' }) => {
+        const { roomId, verdict } = data;
+        const room = activeRooms.get(roomId);
+
+        // Verificamos se a sala existe, se o jogador é o questioner e se a fase é 'VERDICT'.
+        if (
+          !room ||
+          socket.id !== room.questionerId ||
+          room.phase !== 'VERDICT'
+        ) {
+          return;
+        }
+
+        const responder = room.players.find((p) => p.id === room.responderId);
+        if (!responder) return;
+
+        // Processamos o veredito
+        if (verdict === 'accepted') {
+          // A Recompensa: O "Responder" bem-sucedido torna-se o próximo a girar.
+          room.spinnerId = room.responderId;
+          // Se a carta era um desafio, reiniciamos o seu contador de "verdades".
+          if (room.currentCard?.type === 'dare') {
+            responder.consecutiveTruths = 0;
+          }
+        } else {
+          // verdict === 'rejected'
+          // A Penalidade: O "Responder" recebe uma carga de suspensão.
+          responder.suspensionCount += 1;
+          // O poder de girar volta para um jogador aleatório (que não seja o penalizado).
+          const eligibleSpinners = room.players.filter(
+            (p) => p.id !== room.responderId,
+          );
+          const randomSpinner =
+            eligibleSpinners[
+              Math.floor(Math.random() * eligibleSpinners.length)
+            ];
+          room.spinnerId = randomSpinner.id;
+        }
+
+        // Reiniciamos o estado do jogo para a próxima rodada.
+        room.phase = 'SPINNING';
+        room.questionerId = null;
+        room.responderId = null;
+        room.currentCard = null;
+        room.votes = {};
+
+        console.log(
+          `[VEREDITO] Sala: ${roomId}. Veredito: ${verdict}. Próximo a girar: ${room.spinnerId}`,
+        );
+
+        // Enviamos o estado atualizado para todos na sala para iniciar a nova rodada.
+        io.to(roomId).emit('update_game_state', room);
+      },
+    );
+
     socket.on('disconnect', () => {
       console.log(`🔌 Cliente desconectado: ${socket.id}`);
 
