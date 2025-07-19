@@ -16,7 +16,7 @@ const LAYOUTS: { [key: number]: { x: number; y: number }[] } = {
 };
 
 const GamePage: React.FC = () => {
-  const { gameState, socketId, spinBottle } = useGame();
+  const { gameState, socketId, spinBottle, makeChoice } = useGame();
   const [bottleRotation, setBottleRotation] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
 
@@ -64,6 +64,18 @@ const GamePage: React.FC = () => {
   const handleSpinBottle = () => {
     if (isMyTurnToSpin && phase === 'SPINNING') {
       spinBottle(roomId);
+    }
+  };
+
+    const handleSelectTruth = () => {
+    if (isMyTurnToChoose) {
+      makeChoice(roomId, 'truth');
+    }
+  };
+
+  const handleSelectDare = () => {
+    if (isMyTurnToChoose) {
+      makeChoice(roomId, 'dare');
     }
   };
 
@@ -144,8 +156,8 @@ const GamePage: React.FC = () => {
       <div className="absolute bottom-10 flex gap-4 z-20">
         {phase === 'CHOOSING' && isMyTurnToChoose && isRevealed && (
           <>
-            <button className="bg-cyan-500 text-white font-bold text-xl py-4 px-12 rounded-lg shadow-lg hover:bg-cyan-600">VERDADE</button>
-            <button className="bg-pink-600 text-white font-bold text-xl py-4 px-12 rounded-lg shadow-lg hover:bg-pink-700">DESAFIO</button>
+            <button onClick={handleSelectTruth} className="bg-cyan-500 text-white font-bold text-xl py-4 px-12 rounded-lg shadow-lg hover:bg-cyan-600">VERDADE</button>
+            <button onClick={handleSelectDare} className="bg-pink-600 text-white font-bold text-xl py-4 px-12 rounded-lg shadow-lg hover:bg-pink-700">DESAFIO</button>
           </>
         )}
       </div>

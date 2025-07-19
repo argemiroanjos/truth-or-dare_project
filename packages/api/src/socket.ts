@@ -1,5 +1,12 @@
 import { Server, Socket } from 'socket.io';
-import { Player, GameState } from '@verdade-ou-desafio/common/interfaces/Game';
+import { Op } from 'sequelize';
+import {
+  Player,
+  GameState,
+  Card,
+} from '@verdade-ou-desafio/common/interfaces/Game';
+import CardModel from './models/Card';
+import sequelize from './database';
 
 const activeRooms = new Map<string, GameState>();
 const MAX_PLAYERS_PER_ROOM = 8; // Definindo um limite máximo de jogadores por sala
@@ -145,6 +152,64 @@ export const setupSocket = (io: Server) => {
       // Emitimos o estado atualizado do jogo para todos os jogadores na sala.
       io.to(roomId).emit('update_game_state', room);
     });
+
+    socket.on(
+      'make_choice',
+      async (data: { roomId: string; choice: 'truth' | 'dare' }) => {
+        const { roomId, choice } = data;
+        const room = activeRooms.get(roomId);
+        // Verificamos se a sala existe, se o jogador é o questioner e se a fase é 'CHOOSING'.
+        if (
+          !room ||
+          socket.id !== room.questionerId ||
+          room.phase !== 'CHOOSING'
+        ) {
+          return;
+        }
+
+        try {
+          // Buscamos uma carta na base de dados
+          const usedCardIdsForResponder =
+            room.usedCardIds[room.responderId!] || [];
+
+          const card = await CardModel.findOne({
+            where: {
+              type: choice,
+              id: { [Op.notIn]: usedCardIdsForResponder },
+            },
+            order: sequelize.random(),
+          });
+
+          if (!card) {
+            room.currentCard = {
+              id: 0,
+              type: choice,
+              content: 'Todas as cartas foram usadas!',
+              level: 1,
+            };
+          } else {
+            room.currentCard = card.toJSON() as Card;
+            // Adicionamos o ID da nova carta à lista de cartas usadas pelo "Responder"
+            room.usedCardIds[room.responderId!].push(card.id);
+          }
+
+          // Atualizamos a fase do jogo para 'ACTION'
+          room.phase = 'ACTION';
+          console.log(
+            `[ESCOLHA FEITA] Sala: ${roomId}. Escolha: ${choice}. Carta ID: ${room.currentCard.id}`,
+          );
+
+          // Enviamos o estado atualizado para todos na sala
+          io.to(roomId).emit('update_game_state', room);
+        } catch (error) {
+          console.error('Erro ao buscar carta:', error);
+          io.to(roomId).emit(
+            'erro_jogo',
+            'Ocorreu um erro ao buscar a carta. Tente novamente.',
+          );
+        }
+      },
+    );
 
     socket.on('disconnect', () => {
       console.log(`🔌 Cliente desconectado: ${socket.id}`);
