@@ -118,22 +118,49 @@ export const setupSocket = (io: Server) => {
 
     socket.on('spin_bottle', (roomId: string) => {
       const room = activeRooms.get(roomId);
-      if (!room || socket.id !== room.spinnerId || room.phase !== 'SPINNING') {
+      if (!room || socket.id !== room.spinnerId || room.phase !== 'SPINNING')
         return;
-      }
 
-      // Criamos uma lista de jogadores elegíveis (todos, exceto quem girou).
       const eligiblePlayers = room.players.filter((p) => p.id !== socket.id);
-      if (eligiblePlayers.length < 2) {
+      if (eligiblePlayers.length < 2) return;
+
+      // LÓGICA DE SORTEIO JUSTO
+      if (room.questionerPool.length === 0) {
+        room.questionerPool = room.players.map((p) => p.id);
+      }
+
+      const poolIndex = Math.floor(Math.random() * room.questionerPool.length);
+      const potentialQuestionerId = room.questionerPool.splice(poolIndex, 1)[0];
+      const questioner = room.players.find(
+        (p) => p.id === potentialQuestionerId,
+      );
+
+      // LÓGICA DE SUSPENSÃO
+      if (questioner && questioner.suspensionCount > 0) {
+        questioner.suspensionCount -= 1;
+        room.phase = 'SUSPENDED';
+        room.questionerId = questioner.id;
+
+        console.log(
+          `[SUSPENSÃO] Sala: ${roomId}. Jogador ${questioner.name} estava suspenso e perdeu a vez.`,
+        );
+        io.to(roomId).emit('update_game_state', room);
+
+        // Reiniciamos o giro após 4 segundos
+        setTimeout(() => {
+          if (activeRooms.has(roomId)) {
+            const currentRoom = activeRooms.get(roomId)!;
+            currentRoom.phase = 'SPINNING';
+            currentRoom.spinnerId = currentRoom.hostId;
+            currentRoom.questionerId = null;
+            io.to(roomId).emit('update_game_state', currentRoom);
+          }
+        }, 4000);
         return;
       }
-      // Escolhemos aleatoriamente um questioner e um responder.
-      const questionerIndex = Math.floor(
-        Math.random() * eligiblePlayers.length,
-      );
-      room.questionerId = eligiblePlayers[questionerIndex].id;
 
-      // Removemos o questioner escolhido da lista de elegíveis para o responder.
+      // Se não houver suspensão, continuamos com o jogo
+      room.questionerId = potentialQuestionerId;
       const remainingPlayers = eligiblePlayers.filter(
         (p) => p.id !== room.questionerId,
       );
@@ -141,15 +168,11 @@ export const setupSocket = (io: Server) => {
         Math.random() * remainingPlayers.length,
       );
       room.responderId = remainingPlayers[responderIndex].id;
-
-      // Atualizamos o estado do jogo.
       room.phase = 'CHOOSING';
 
       console.log(
         `[GARRAFA GIRADA] Sala: ${roomId}. Questioner: ${room.questionerId}, Responder: ${room.responderId}`,
       );
-
-      // Emitimos o estado atualizado do jogo para todos os jogadores na sala.
       io.to(roomId).emit('update_game_state', room);
     });
 
@@ -279,31 +302,24 @@ export const setupSocket = (io: Server) => {
         const { roomId, verdict } = data;
         const room = activeRooms.get(roomId);
 
-        // Verificamos se a sala existe, se o jogador é o questioner e se a fase é 'VERDICT'.
         if (
           !room ||
           socket.id !== room.questionerId ||
           room.phase !== 'VERDICT'
-        ) {
+        )
           return;
-        }
 
         const responder = room.players.find((p) => p.id === room.responderId);
         if (!responder) return;
 
-        // Processamos o veredito
         if (verdict === 'accepted') {
-          // A Recompensa: O "Responder" bem-sucedido torna-se o próximo a girar.
           room.spinnerId = room.responderId;
-          // Se a carta era um desafio, reiniciamos o seu contador de "verdades".
           if (room.currentCard?.type === 'dare') {
             responder.consecutiveTruths = 0;
           }
         } else {
-          // verdict === 'rejected'
-          // A Penalidade: O "Responder" recebe uma carga de suspensão.
+          // APLICAÇÃO DA SUSPENSÃO
           responder.suspensionCount += 1;
-          // O poder de girar volta para um jogador aleatório (que não seja o penalizado).
           const eligibleSpinners = room.players.filter(
             (p) => p.id !== room.responderId,
           );
@@ -312,20 +328,19 @@ export const setupSocket = (io: Server) => {
               Math.floor(Math.random() * eligibleSpinners.length)
             ];
           room.spinnerId = randomSpinner.id;
+
+          console.log(
+            `[VEREDITO] Sala: ${roomId}. ${responder.name} foi suspenso. Próximo a girar: ${room.spinnerId}`,
+          );
         }
 
-        // Reiniciamos o estado do jogo para a próxima rodada.
+        // Reiniciamos o jogo para a próxima rodada.
         room.phase = 'SPINNING';
         room.questionerId = null;
         room.responderId = null;
         room.currentCard = null;
         room.votes = {};
 
-        console.log(
-          `[VEREDITO] Sala: ${roomId}. Veredito: ${verdict}. Próximo a girar: ${room.spinnerId}`,
-        );
-
-        // Enviamos o estado atualizado para todos na sala para iniciar a nova rodada.
         io.to(roomId).emit('update_game_state', room);
       },
     );

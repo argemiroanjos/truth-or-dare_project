@@ -235,6 +235,15 @@ const isTruthDisabled = responder ? responder.consecutiveTruths >= TRUTH_LIMIT :
             <p className="text-2xl font-display font-bold text-cyan-400">{responder.name}</p>
           </>
         )}
+        {/* APLICAÇÃO DA SUSPENSÃO */}
+        {phase === 'SUSPENDED' && questioner && (
+          <div className="animate-pulse">
+            <h1 className="text-2xl font-display text-red-500">SUSPENSO!</h1>
+            <p className="text-xl text-gray-400">
+              <span className="font-bold">{questioner.name}</span> perdeu a vez de perguntar!
+            </p>
+          </div>
+        )}
       </div>
 
       <div 
