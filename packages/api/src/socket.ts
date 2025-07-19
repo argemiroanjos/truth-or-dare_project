@@ -166,6 +166,17 @@ export const setupSocket = (io: Server) => {
         ) {
           return;
         }
+        // Verificamos se o responder está definido.
+        const responder = room.players.find((p) => p.id === room.responderId);
+        if (!responder) return;
+
+        // 1. Se a escolha for 'truth', incrementamos o contador do "Responder".
+        if (choice === 'truth') {
+          responder.consecutiveTruths += 1;
+        } else {
+          // Se for 'dare', reiniciamos o contador.
+          responder.consecutiveTruths = 0;
+        }
 
         try {
           // Buscamos uma carta na base de dados

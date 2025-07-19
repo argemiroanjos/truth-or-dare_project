@@ -165,7 +165,11 @@ const GamePage: React.FC = () => {
   const isMyTurnToSpin = socketId === spinnerId;
   const isMyTurnToChoose = socketId === questionerId;
   const isMyTurnToRespond = socketId === responderId;
-    const hasVoted = socketId ? votes[socketId] !== undefined : false;
+  const hasVoted = socketId ? votes[socketId] !== undefined : false;
+
+  const TRUTH_LIMIT =  2;
+const isTruthDisabled = responder ? responder.consecutiveTruths >= TRUTH_LIMIT : false;
+
 
   const handleSpinBottle = () => {
     if (isMyTurnToSpin && phase === 'SPINNING') {
@@ -280,7 +284,12 @@ const GamePage: React.FC = () => {
       <div className="absolute bottom-10 flex gap-4 z-20">
         {phase === 'CHOOSING' && isMyTurnToChoose && isRevealed && (
           <>
-            <button onClick={handleSelectTruth} className="bg-cyan-500 text-white font-bold text-xl py-4 px-12 rounded-lg shadow-lg hover:bg-cyan-600">VERDADE</button>
+            <button 
+              onClick={handleSelectTruth} 
+              disabled={isTruthDisabled} 
+              className="bg-cyan-500 text-white font-bold text-xl py-4 px-12 rounded-lg shadow-lg hover:bg-cyan-600 disabled:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >VERDADE
+            </button>
             <button onClick={handleSelectDare} className="bg-pink-600 text-white font-bold text-xl py-4 px-12 rounded-lg shadow-lg hover:bg-pink-700">DESAFIO</button>
           </>
         )}
