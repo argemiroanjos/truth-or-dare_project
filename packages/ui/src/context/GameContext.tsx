@@ -17,7 +17,7 @@ interface IGameContext {
   confirmVerdict: (roomId: string, verdict: 'accepted' | 'rejected') => void;
 }
 
-const GameContext = createContext<IGameContext>(null!);
+export const GameContext = createContext<IGameContext>(null!);
 
 // Hook para acessar o contexto do jogo.
 // Isso facilita o acesso ao contexto em outros componentes.

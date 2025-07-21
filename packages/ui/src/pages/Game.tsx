@@ -225,7 +225,7 @@ const isTruthDisabled = responder ? responder.consecutiveTruths >= TRUTH_LIMIT :
       <div className="text-center absolute top-10 z-20 h-20">
         {phase === 'SPINNING' && spinner && (
           <>
-            <h1 className="text-2xl font-display">É a vez de <span className="font-bold text-yellow-400">{spinner.name}</span></h1>
+            <h1 className="text-2xl font-display">É a vez de <span data-testid="turn-player" className="font-bold text-yellow-400">{spinner.name}</span></h1>
             <p className="text-gray-400">{isMyTurnToSpin ? "Clique na garrafa para girar!" : "Aguardando o jogador girar a garrafa..."}</p>
           </>
         )}
