@@ -19,11 +19,13 @@ function App() {
   };
 
   return (
-    <>
-      {renderPage()}
+    <div className="relative flex flex-col min-h-screen overflow-x-hidden">
+      <div className="flex-grow">
+        {renderPage()}
+      </div>
       <FeedbackButton />
       <Footer />
-    </>
+    </div>
   );
 }
 

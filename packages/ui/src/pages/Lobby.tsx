@@ -27,7 +27,7 @@ const Lobby: React.FC = () => {
   };
 
   return (
-    <main className="flex flex-col items-center justify-start min-h-screen bg-gradient-to-b from-indigo-950 to-black p-4 text-white pt-16 md:pt-24">
+    <main className="flex flex-col items-center justify-start min-h-screen bg-gradient-to-b from-indigo-950 to-black p-4 text-white pt-16 md:pt-24 pb-24">
       <header className="w-full max-w-xs md:max-w-sm mb-8">
         <img src={kekasMascot} alt="Mascote Keka's" className="w-20 h-auto mx-auto" />
       </header>
