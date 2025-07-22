@@ -4,15 +4,13 @@ services:
   # Serviço do Backend (API)
   api:
     build:
-      context: . # O contexto do build é a raiz do projeto
+      context: .
       dockerfile: ./packages/api/Dockerfile
     container_name: spicy_api
     ports:
       - "3333:3000"
-    # ATUALIZAÇÃO AQUI: Montamos a pasta raiz inteira
     volumes:
       - .:/usr/src/app
-    # ATUALIZAÇÃO AQUI: Definimos o diretório de trabalho
     working_dir: /usr/src/app/packages/api
     command: sh -c "npm install && npm run dev"
     depends_on:
@@ -28,15 +26,13 @@ services:
   # Serviço do Frontend (UI)
   frontend:
     build:
-      context: . # O contexto do build é a raiz do projeto
+      context: .
       dockerfile: ./packages/ui/Dockerfile
     container_name: spicy_ui
     ports:
       - "5173:5173"
-    # ATUALIZAÇÃO AQUI: Montamos a pasta raiz inteira
     volumes:
       - .:/usr/src/app
-    # ATUALIZAÇÃO AQUI: Definimos o diretório de trabalho
     working_dir: /usr/src/app/packages/ui
     command: sh -c "npm install && npm run dev"
 

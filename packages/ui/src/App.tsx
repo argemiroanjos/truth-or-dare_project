@@ -1,9 +1,9 @@
 import { useGame } from './context/GameContext';
 import Home from './pages/Home';
 import Lobby from './pages/Lobby';
-import Game from './pages/Game'; // Certifique-se de que o nome do ficheiro é 'Game.tsx' ou 'GamePage.tsx'
+import Game from './pages/Game';
 import Footer from './components/Footer';
-import FeedbackButton from './components/FeedbacksButton'; // Verifique se o nome do ficheiro é 'FeedbacksButton.tsx'
+import FeedbackButton from './components/FeedbacksButton';
 
 function App() {
   const { gameState } = useGame();

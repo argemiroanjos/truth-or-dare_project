@@ -29,7 +29,7 @@ const VerdictModal: React.FC<VerdictModalProps> = ({ votes, isQuestioner, onConf
             </div>
           </>
         ) : (
-          <p className="text-lg text-gray-400 animate-pulse">A aguardar o veredito do Questioner...</p>
+          <p className="text-lg text-gray-400 animate-pulse">Aguardando o veredito do Questioner...</p>
         )}
       </div>
     </div>

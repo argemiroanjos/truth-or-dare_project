@@ -117,7 +117,7 @@ const GamePage: React.FC = () => {
         {phase === 'SPINNING' && spinner && (
           <>
             <h1 className="text-2xl font-display">
-              É a vez de <span data-testid="turn-player" className="font-bold text-yellow-400">{spinner.name}</span>
+              É a vez de <span data-testid="turn-player" className="font-bold text-white-400">{spinner.name}</span>
             </h1>
             <p className="text-gray-400">{isMyTurnToSpin ? "Clique na garrafa para girar!" : "Aguardando o jogador girar a garrafa..."}</p>
           </>

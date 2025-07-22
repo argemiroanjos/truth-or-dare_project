@@ -94,8 +94,6 @@ const Home: React.FC = () => {
           className="w-full h-auto"
         />
       </section>
-      
-      {/* Chamando a função para renderizar o conteúdo dinâmico. */}
       <nav>
         {renderContent()}
       </nav>

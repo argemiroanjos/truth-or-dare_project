@@ -20,9 +20,9 @@ const VotingModal: React.FC<VotingModalProps> = ({ card, votes, isResponder, has
         <p className="text-xl text-gray-300 mb-6">A ação foi cumprida?</p>
         <p className="text-2xl text-white mb-8 bg-black/20 p-4 rounded-lg">"{card.content}"</p>
         {isResponder ? (
-          <p className="text-lg text-gray-400">A aguardar os votos dos outros jogadores...</p>
+          <p className="text-lg text-gray-400">Aguardando os votos dos outros jogadores...</p>
         ) : hasVoted ? (
-          <p className="text-lg text-green-400">O seu voto foi registado! A aguardar os outros...</p>
+          <p className="text-lg text-green-400">O seu voto foi registrado! Aguardando os outros...</p>
         ) : (
           <div className="flex gap-4 justify-center">
             <button onClick={() => onSubmitVote('like')} className="bg-green-500 text-white text-4xl w-24 h-24 rounded-full shadow-lg hover:bg-green-600">👍</button>
