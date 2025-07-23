@@ -1,23 +1,29 @@
 import { Sequelize } from 'sequelize';
 import 'dotenv/config';
 
-const dbName = process.env.DB_NAME || 'spicy_db';
-const dbUser = process.env.DB_USER || 'root';
-const dbPassword = process.env.DB_PASSWORD || 'root';
-const dbPort = process.env.DB_PORT || '3306';
+const dbUrl = process.env.DATABASE_URL;
 
-// Definindo o host do banco de dados, dependendo do ambiente em que estamos.
-const dbHost = process.env.DB_HOST || 'db';
+if (!dbUrl) {
+  throw new Error('DATABASE_URL não está definida. Verifique seu arquivo .env');
+}
 
-// Criando uma nova instância do Sequelize, passando as credenciais do nosso banco de dados.
-const sequelize = new Sequelize(dbName, dbUser, dbPassword, {
-  host: dbHost,
-  port: parseInt(dbPort, 10),
-  dialect: 'mysql',
+// Adicionamos as opções de SSL apenas se estivermos em produção
+const isProduction = process.env.NODE_ENV === 'production';
+const dialectOptions = isProduction
+  ? {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    }
+  : {};
+
+const sequelize = new Sequelize(dbUrl, {
+  dialect: 'postgres',
+  dialectOptions: dialectOptions,
   logging: false,
 });
 
-// Testando a conexão com o banco de dados.
 export const testDataBaseConnection = async () => {
   try {
     await sequelize.authenticate();

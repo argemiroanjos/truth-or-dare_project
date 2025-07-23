@@ -1,14 +1,14 @@
 services:
   # 1. Serviço de Banco de Dados
-  - type: mysql
-    name: spicy-db 
-    plan: free 
-    databaseName: spicy_db 
-    user: spicy_user 
+  - type: psql
+    name: spicy-db
+    plan: free
+    databaseName: spicy_db
+    user: spicy_user
 
   # 2. Serviço do Backend (API)
   - type: web
-    name: spicy-api 
+    name: spicy-api
     runtime: node
     plan: free
     rootDir: ./packages/api
