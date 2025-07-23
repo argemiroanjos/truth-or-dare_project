@@ -1,12 +1,4 @@
 services:
-  # 1. Serviço de Banco de Dados
-  - type: psql
-    name: spicy-db
-    plan: free
-    databaseName: spicy_db
-    user: spicy_user
-
-  # 2. Serviço do Backend (API)
   - type: web
     name: spicy-api
     runtime: node
@@ -23,3 +15,9 @@ services:
         value: 3000
       - key: CORS_ORIGIN
         value: https://kekas.vercel.app
+
+databases:
+  - name: spicy-db
+    plan: free
+    databaseName: spicy_db
+    user: spicy_user
