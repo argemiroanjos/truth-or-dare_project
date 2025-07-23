@@ -5,7 +5,7 @@ services:
     plan: free
     rootDir: ./packages/api
     buildCommand: "npm install && npm run build"
-    startCommand: "npm run db:migrate && node dist/api/src/server.js"
+    startCommand: "npm run db:migrate && npm run db:seed && node dist/api/src/server.js"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -15,20 +15,6 @@ services:
         value: 3000
       - key: CORS_ORIGIN
         value: https://kekas.vercel.app
-
-  - type: cron
-    name: spicy-seeder
-    runtime: node
-    plan: free
-    rootDir: ./packages/api
-    buildCommand: "npm install && npm run build"
-    startCommand: "npm run db:seed"
-    schedule: "59 23 31 2 *"
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: spicy-db
-          property: connectionString
 
 databases:
   - name: spicy-db
