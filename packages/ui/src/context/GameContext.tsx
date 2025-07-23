@@ -38,7 +38,6 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     socketService.onGameStateUpdate((newGameState) => {
-      console.log('[GameContext] Estado do jogo atualizado:', newGameState);
       setGameState(newGameState);
     });
 

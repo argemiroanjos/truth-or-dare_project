@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { httpServer } from './app';
 import { testDataBaseConnection } from './database';
 

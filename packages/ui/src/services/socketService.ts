@@ -11,19 +11,19 @@ class SocketService {
       transports: ['websocket'],
     });
 
-    this.socket.on('connect', () => {
-      console.log(`[SocketService] Conectado ao servidor com o ID: ${this.socket.id}`);
-    });
-
     this.socket.on('disconnect', () => {
-      console.log('[SocketService] Desconectado do servidor.');
+      if (import.meta.env.DEV) {
+        console.log('[SocketService] Desconectado do servidor.');
+      }
     });
   }
 
   public onConnect(callback: (id: string) => void) {
     this.socket.on('connect', () => {
       if (this.socket.id) {
+        if (import.meta.env.DEV) {
         console.log(`[SocketService] Conectado com o ID: ${this.socket.id}`);
+        }
         callback(this.socket.id);
       }
     });
