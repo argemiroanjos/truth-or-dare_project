@@ -118,60 +118,83 @@ export const setupSocket = (io: Server) => {
 
     socket.on('spin_bottle', (roomId: string) => {
       const room = activeRooms.get(roomId);
-      if (!room || socket.id !== room.spinnerId || room.phase !== 'SPINNING')
+      if (!room || socket.id !== room.spinnerId || room.phase !== 'SPINNING') {
         return;
-
-      const eligiblePlayers = room.players.filter((p) => p.id !== socket.id);
-      if (eligiblePlayers.length < 2) return;
-
-      // LÓGICA DE SORTEIO JUSTO
-      if (room.questionerPool.length === 0) {
-        room.questionerPool = room.players.map((p) => p.id);
       }
 
-      const poolIndex = Math.floor(Math.random() * room.questionerPool.length);
-      const potentialQuestionerId = room.questionerPool.splice(poolIndex, 1)[0];
-      const questioner = room.players.find(
-        (p) => p.id === potentialQuestionerId,
-      );
+      if (room.players.length === 2) {
+        room.questionerId = room.spinnerId;
+        const responder = room.players.find((p) => p.id !== room.spinnerId);
 
-      // LÓGICA DE SUSPENSÃO
-      if (questioner && questioner.suspensionCount > 0) {
-        questioner.suspensionCount -= 1;
-        room.phase = 'SUSPENDED';
-        room.questionerId = questioner.id;
+        if (!responder) {
+          console.error(
+            '[ERRO DE LÓGICA] Não foi possível determinar o responder no caso de 2 jogadores.',
+          );
+          return;
+        }
+        room.responderId = responder.id;
+      } else {
+        const eligiblePlayers = room.players.filter((p) => p.id !== socket.id);
 
-        console.log(
-          `[SUSPENSÃO] Sala: ${roomId}. Jogador ${questioner.name} estava suspenso e perdeu a vez.`,
+        if (room.questionerPool.length === 0) {
+          room.questionerPool = room.players.map((p) => p.id);
+        }
+
+        const poolIndex = Math.floor(
+          Math.random() * room.questionerPool.length,
         );
-        io.to(roomId).emit('update_game_state', room);
+        const potentialQuestionerId = room.questionerPool.splice(
+          poolIndex,
+          1,
+        )[0];
+        const questioner = room.players.find(
+          (p) => p.id === potentialQuestionerId,
+        );
 
-        // Reiniciamos o giro após 4 segundos
-        setTimeout(() => {
-          if (activeRooms.has(roomId)) {
-            const currentRoom = activeRooms.get(roomId)!;
-            currentRoom.phase = 'SPINNING';
-            currentRoom.spinnerId = currentRoom.hostId;
-            currentRoom.questionerId = null;
-            io.to(roomId).emit('update_game_state', currentRoom);
-          }
-        }, 4000);
-        return;
+        if (questioner && questioner.suspensionCount > 0) {
+          questioner.suspensionCount -= 1;
+          room.phase = 'SUSPENDED';
+          room.questionerId = questioner.id;
+
+          console.log(
+            `[SUSPENSÃO] Sala: ${roomId}. Jogador ${questioner.name} estava suspenso e perdeu a vez.`,
+          );
+          io.to(roomId).emit('update_game_state', room);
+
+          setTimeout(() => {
+            if (activeRooms.has(roomId)) {
+              const currentRoom = activeRooms.get(roomId)!;
+              currentRoom.phase = 'SPINNING';
+              currentRoom.spinnerId = currentRoom.hostId;
+              currentRoom.questionerId = null;
+              io.to(roomId).emit('update_game_state', currentRoom);
+            }
+          }, 4000);
+          return;
+        }
+
+        room.questionerId = potentialQuestionerId;
+
+        const remainingPlayers = eligiblePlayers.filter(
+          (p) => p.id !== room.questionerId,
+        );
+
+        const responderIndex = Math.floor(
+          Math.random() * remainingPlayers.length,
+        );
+        room.responderId = remainingPlayers[responderIndex].id;
       }
 
-      // Se não houver suspensão, continuamos com o jogo
-      room.questionerId = potentialQuestionerId;
-      const remainingPlayers = eligiblePlayers.filter(
-        (p) => p.id !== room.questionerId,
-      );
-      const responderIndex = Math.floor(
-        Math.random() * remainingPlayers.length,
-      );
-      room.responderId = remainingPlayers[responderIndex].id;
       room.phase = 'CHOOSING';
+      const questionerName = room.players.find(
+        (p) => p.id === room.questionerId,
+      )?.name;
+      const responderName = room.players.find(
+        (p) => p.id === room.responderId,
+      )?.name;
 
       console.log(
-        `[GARRAFA GIRADA] Sala: ${roomId}. Questioner: ${room.questionerId}, Responder: ${room.responderId}`,
+        `[GARRAFA GIRADA] Sala: ${roomId}. Questioner: ${questionerName}, Responder: ${responderName}`,
       );
       io.to(roomId).emit('update_game_state', room);
     });

@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { GameState } from '@verdade-ou-desafio/common/interfaces/Game';
 
-const SOCKET_URL = 'http://localhost:3333';
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
 
 class SocketService {
   private socket: Socket;
