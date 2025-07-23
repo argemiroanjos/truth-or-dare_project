@@ -14,15 +14,16 @@ services:
       - key: PORT
         value: 3000
       - key: CORS_ORIGIN
-        value: https://kekas-game-ui.vercel.app
+        value: https://kekas.vercel.app
 
-  - type: job
+  - type: cron
     name: spicy-seeder
     runtime: node
     plan: free
     rootDir: ./packages/api
     buildCommand: "npm install && npm run build"
     startCommand: "npm run db:seed"
+    schedule: "59 23 31 2 *"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
