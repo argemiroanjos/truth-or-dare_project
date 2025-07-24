@@ -4,15 +4,18 @@ import CardModal from '../components/modals/CardModal';
 import VotingModal from '../components/modals/VotingModal';
 import VerdictModal from '../components/modals/VerdictModal';
 import { LAYOUTS } from '../constants/layouts';
+import IconButton from '../components/IconButton';
+import ExitModal from '../components/modals/ExitModal';
 
 const playerAvatars = ['🐵', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐷'];
 
 const TRUTH_LIMIT = 2;
 
 const GamePage: React.FC = () => {
-  const { gameState, socketId, spinBottle, makeChoice, completeAction, submitVote, confirmVerdict } = useGame();
+  const { gameState, socketId, spinBottle, makeChoice, completeAction, submitVote, confirmVerdict, leaveRoom } = useGame();
   const [bottleRotation, setBottleRotation] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
+  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
 
   useEffect(() => {
     if (!gameState) return;
@@ -96,6 +99,11 @@ const GamePage: React.FC = () => {
     }
   };
 
+  const handleConfirmExit = () => {
+    leaveRoom();
+    setIsExitModalOpen(false);
+  };
+
   const currentLayout = LAYOUTS[players.length] || [];
 
   if (players.length < 2 && phase !== 'LOBBY') {
@@ -112,6 +120,13 @@ const GamePage: React.FC = () => {
 
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-indigo-950 to-black p-4 text-white overflow-hidden">
+      <div className="absolute top-4 left-4">
+        <IconButton onClick={() => setIsExitModalOpen(true)} title="Sair do Jogo">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+        </IconButton>
+      </div>
 
       <div className="text-center absolute top-10 z-20 h-20">
         {phase === 'SPINNING' && spinner && (
@@ -229,6 +244,11 @@ const GamePage: React.FC = () => {
       {phase === 'VERDICT' && (
         <VerdictModal votes={votes} isQuestioner={isMyTurnToChoose} onConfirmVerdict={handleConfirmVerdict} />
       )}
+      <ExitModal 
+        isOpen={isExitModalOpen} 
+        onConfirm={handleConfirmExit} 
+        onCancel={() => setIsExitModalOpen(false)} 
+      />
     </main>
   );
 };

@@ -15,6 +15,7 @@ interface IGameContext {
   completeAction: (roomId: string) => void;
   submitVote: (roomId: string, vote: 'like' | 'dislike') => void;
   confirmVerdict: (roomId: string, verdict: 'accepted' | 'rejected') => void;
+  leaveRoom: () => void;
 }
 
 export const GameContext = createContext<IGameContext>(null!);
@@ -38,6 +39,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     socketService.onGameStateUpdate((newGameState) => {
+      if (import.meta.env.DEV) {
+        console.log('[GameContext] Estado do jogo atualizado:', newGameState);
+      }
       setGameState(newGameState);
     });
 
@@ -83,6 +87,11 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     socketService.confirmVerdict(roomId, verdict);
   };
 
+  const leaveRoom = () => {
+    socketService.leaveRoom();
+    setGameState(null);
+  };
+
   const value = {
     gameState,
     socketId,
@@ -95,6 +104,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     completeAction,
     submitVote,
     confirmVerdict,
+    leaveRoom
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

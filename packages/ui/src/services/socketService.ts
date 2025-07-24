@@ -66,6 +66,10 @@ class SocketService {
     this.socket.emit('next_round', roomId);
   }
 
+    public leaveRoom() {
+    this.socket.emit('leave_room');
+  }
+
   public onGameStateUpdate(callback: (gameState: GameState) => void) {
     this.socket.on('update_game_state', callback);
   }

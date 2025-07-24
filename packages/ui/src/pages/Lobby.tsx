@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
 import kekasMascot from '../assets/mascote.png'; 
+import IconButton from '../components/IconButton';
+import ExitModal from '../components/modals/ExitModal';
 
 const Lobby: React.FC = () => {
   // Usando hook personalizado useGame para acessar o estado do jogo.
-  const { gameState, startGame, socketId } = useGame();
+  const { gameState, startGame, socketId, leaveRoom } = useGame();
+  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
 
   // Se o estado do jogo não estiver disponível, mostra uma mensagem de carregamento.
   if (!gameState) {
@@ -26,8 +29,20 @@ const Lobby: React.FC = () => {
     }
   };
 
+    const handleConfirmExit = () => {
+    leaveRoom();
+    setIsExitModalOpen(false);
+  };
+
   return (
     <main className="flex flex-col items-center justify-start min-h-screen bg-gradient-to-b from-indigo-950 to-black p-4 text-white pt-16 md:pt-24 pb-24">
+      <div className="absolute top-4 left-4">
+        <IconButton onClick={() => setIsExitModalOpen(true)} title="Sair da Sala">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+        </IconButton>
+      </div>
       <header className="w-full max-w-xs md:max-w-sm mb-8">
         <img src={kekasMascot} alt="Mascote Keka's" className="w-20 h-auto mx-auto" />
       </header>
@@ -75,6 +90,11 @@ const Lobby: React.FC = () => {
           <p className="text-lg text-gray-400">Aguardando o anfitrião iniciar o jogo...</p>
         )}
       </div>
+      <ExitModal 
+        isOpen={isExitModalOpen} 
+        onConfirm={handleConfirmExit} 
+        onCancel={() => setIsExitModalOpen(false)} 
+      />
     </main>
   );
 };

@@ -26,6 +26,33 @@ const findRoomByPlayerId = (
   return null;
 };
 
+const handlePlayerDeparture = (socketId: string, io: Server) => {
+  const roomInfo = findRoomByPlayerId(socketId);
+  if (!roomInfo) return;
+
+  const { room, roomId } = roomInfo;
+  const playerIndex = room.players.findIndex((p) => p.id === socketId);
+
+  if (playerIndex > -1) {
+    const disconnectedPlayerName = room.players[playerIndex].name;
+    console.log(`[SAÍDA] ${disconnectedPlayerName} saiu da sala ${roomId}`);
+    room.players.splice(playerIndex, 1);
+  }
+
+  if (room.players.length === 0) {
+    activeRooms.delete(roomId);
+    console.log(`[SALA FECHADA] A sala ${roomId} ficou vazia e foi fechada.`);
+  } else {
+    if (socketId === room.hostId) {
+      room.hostId = room.players[0].id;
+      console.log(
+        `[NOVO ANFITRIÃO] O anfitrião saiu. O novo anfitrião da sala ${roomId} é ${room.players[0].name}.`,
+      );
+    }
+    io.to(roomId).emit('update_game_state', room);
+  }
+};
+
 // Configuração do Socket.IO
 export const setupSocket = (io: Server) => {
   io.on('connection', (socket: Socket) => {
@@ -216,6 +243,15 @@ export const setupSocket = (io: Server) => {
         const responder = room.players.find((p) => p.id === room.responderId);
         if (!responder) return;
 
+        const TRUTH_LIMIT = 2;
+        if (choice === 'truth' && responder.consecutiveTruths >= TRUTH_LIMIT) {
+          // Se o jogador tentar escolher 'verdade' acima do limite, a ação é ignorada no servidor.
+          console.log(
+            `[AÇÃO INVÁLIDA] Sala: ${roomId}. ${responder.name} tentou escolher 'verdade' acima do limite.`,
+          );
+          return;
+        }
+
         // 1. Se a escolha for 'truth', incrementamos o contador do "Responder".
         if (choice === 'truth') {
           responder.consecutiveTruths += 1;
@@ -368,35 +404,14 @@ export const setupSocket = (io: Server) => {
       },
     );
 
+    socket.on('leave_room', () => {
+      handlePlayerDeparture(socket.id, io);
+    });
+
     socket.on('disconnect', () => {
       console.log(`🔌 Cliente desconectado: ${socket.id}`);
-
-      const roomInfo = findRoomByPlayerId(socket.id);
-      if (!roomInfo) return;
-
-      const { room, roomId } = roomInfo;
-      const playerIndex = room.players.findIndex((p) => p.id === socket.id);
-
-      if (playerIndex > -1) {
-        const disconnectedPlayerName = room.players[playerIndex].name;
-        console.log(`[SAÍDA] ${disconnectedPlayerName} saiu da sala ${roomId}`);
-        room.players.splice(playerIndex, 1);
-      }
-
-      if (room.players.length === 0) {
-        activeRooms.delete(roomId);
-        console.log(
-          `[SALA FECHADA] A sala ${roomId} ficou vazia e foi fechada.`,
-        );
-      } else {
-        if (socket.id === room.hostId) {
-          room.hostId = room.players[0].id;
-          console.log(
-            `[NOVO ANFITRIÃO] O anfitrião saiu. O novo anfitrião da sala ${roomId} é ${room.players[0].name}.`,
-          );
-        }
-        io.to(roomId).emit('update_game_state', room);
-      }
+      // A função 'disconnect' agora também usa a nossa função reutilizável.
+      handlePlayerDeparture(socket.id, io);
     });
   });
 };
