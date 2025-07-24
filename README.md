@@ -2,7 +2,7 @@
 
 ![Banner do Keka's](./assets/keka's-logo.png)
 
-Bem-vindo ao Keka's, um jogo multiplayer online de Verdade ou Desafio construído para ser uma experiência divertida e interativa entre amigos. Crie uma sala, convide seus amigos e deixe a garrafa decidir quem será o próximo a revelar um segredo ou a cumprir um desafio!
+Bem-vindo ao Keka's! Criei este jogo de Verdade ou Desafio para ser uma experiência online divertida e interativa para jogar com os amigos. É bem simples: crie uma sala, convide a galera com o código, e deixe a garrafa decidir quem será o próximo a revelar um segredo ou a cumprir um desafio!
 
 **[Clique aqui para jogar a versão ao vivo!](https://kekas.vercel.app)**
 
@@ -10,11 +10,11 @@ Bem-vindo ao Keka's, um jogo multiplayer online de Verdade ou Desafio construíd
 
 ### 💡 Sobre o Projeto: A Jornada por Trás do Código
 
-Este projeto representa mais do que apenas código; ele marca uma jornada pessoal de superação e um retorno à programação. Após um hiato de um ano afastado do desenvolvimento por motivos pessoais, o Keka's nasceu do desafio de reavaliar e reafirmar minhas habilidades técnicas, construindo uma aplicação complexa do zero e levando-a até o deploy de forma autônoma.
+Este projeto nasceu de um desafio muito pessoal. Depois de ficar um ano inteiro sem programar por causa do falecimento do meu pai, eu precisava saber se ainda "levava jeito" para a coisa. Tinha muitas dúvidas na cabeça se conseguiria mesmo levar um projeto do zero até o deploy, sozinho. E no fim, felizmente, deu tudo certo.
 
-A escolha de criar um jogo foi intencional. Em vez de um projeto de estudo padrão, o objetivo era desenvolver uma aplicação que não apenas demonstrasse competência técnica, mas que também fosse genuinamente divertida e engajante para qualquer usuário. É uma forma de convidar todos — desde desenvolvedores a amigos — a testar e interagir com o resultado de um trabalho feito com muita dedicação.
+A ideia de fazer um jogo, e não um projeto de portfólio mais "padrão", foi de propósito. Eu queria criar algo que não só mostrasse o que eu sei fazer, mas que fosse divertido para qualquer pessoa testar. Para nós, devs, é normal olhar um projeto com um olhar técnico, mas para os meus amigos e outros usuários, um jogo é muito mais animado de avaliar.
 
-Embora eu reconheça que a jornada de aprendizado e evolução é contínua, concluir este projeto me trouxe um imenso sentimento de realização e a certeza de que a paixão por criar e resolver problemas permanece intacta.
+Sei que ainda tenho muito a evoluir, até por ter ficado tanto tempo parado, mas no geral, me sinto muito feliz e realizado com o resultado "final" do Keka's.
 
 ---
 
@@ -59,10 +59,20 @@ Este projeto é um **monorepo full-stack** utilizando uma arquitetura moderna pa
 Para rodar este projeto no seu ambiente local, você precisará ter o **Docker** e o **Docker Compose** instalados.
 
 1.  **Clone o repositório:**
-    ```bash
-    git clone [https://github.com/argemiroanjos/truth-or-dare_project.git](https://github.com/argemiroanjos/truth-or-dare_project.git)
-    cd truth-or-dare_project
-    ```
+
+    Você pode clonar o projeto usando HTTPS (mais comum) ou SSH (se você tiver uma chave SSH configurada no seu GitHub).
+
+    * **Com HTTPS:**
+        ```bash
+        git clone https://github.com/argemiroanjos/truth-or-dare_project.git
+        cd truth-or-dare_project
+        ```
+
+    * **Com SSH:**
+        ```bash
+        git clone git@github.com:argemiroanjos/truth-or-dare_project.git
+        cd truth-or-dare_project
+        ```
 
 2.  **Crie o arquivo de ambiente para a API:**
     * Navegue até a pasta da API: `cd packages/api`
