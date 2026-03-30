@@ -23,6 +23,10 @@ app.get('/', (req, res) => {
   res.send('Servidor voando!');
 });
 
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 app.use('/cards', cardRoutes);
 
 export { app, httpServer };
